@@ -6,6 +6,7 @@ import { runInclude } from "../commands/include.js";
 import { runExclude } from "../commands/exclude.js";
 import { runList } from "../commands/list.js";
 import { runDoctor } from "../commands/doctor.js";
+import { runCheck } from "../commands/check.js";
 import { runConfigGet, runConfigSet } from "../commands/config.js";
 import {
   runRegistryPackCreate,
@@ -134,6 +135,16 @@ program
     const valid = ["skills", "agents", "commands", "packs", "all"] as const;
     const target = valid.includes(what) ? what : "all";
     await runList(target);
+  });
+
+// ─── syncer check ────────────────────────────────────────────────────────────
+
+program
+  .command("check")
+  .description("Check if the project is out of sync (no network, exits 1 if out of sync)")
+  .option("-q, --quiet", "Suppress output (useful for hooks)")
+  .action(async (opts) => {
+    await runCheck({ quiet: opts.quiet });
   });
 
 // ─── syncer doctor ────────────────────────────────────────────────────────────

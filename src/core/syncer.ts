@@ -10,6 +10,7 @@ import { ensureDir, copyDir } from "../utils/fs.js";
 import { resolveTargets } from "../targets.js";
 import type { ProjectConfig, ResolvedContent, SyncResult } from "../types.js";
 import { log, spinner } from "../utils/output.js";
+import { readLockFile } from "./lock.js";
 
 export interface SyncOptions {
   noFetch?: boolean;
@@ -62,6 +63,13 @@ export async function sync(
   }
 
   const { cachePath, commit } = registryInfo;
+
+  // ── 1b. Check if we're out of sync ───────────────────────────────────────
+  const existingLock = readLockFile(cwd);
+  const isOutOfSync = !existingLock || existingLock.registry_commit !== commit;
+  if (isOutOfSync) {
+    log.warn("Not up to date — fetching updates...");
+  }
 
   // ── 2. Resolve content list ───────────────────────────────────────────────
   spin = spinner("Resolving content...");
