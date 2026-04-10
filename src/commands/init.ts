@@ -15,7 +15,7 @@ import {
   PROJECT_CONFIG_FILE,
   REGISTRY_MARKER_FILE,
 } from "../core/config.js";
-import { ensureRegistry } from "../core/registry.js";
+import { ensureRegistry, listRegistryBranches, listRegistryTags } from "../core/registry.js";
 import {
   listAvailablePacks,
   listAvailableSkills,
@@ -249,10 +249,33 @@ async function initProject(cwd: string): Promise<void> {
   }
 
   // ── Step 5: Version pinning ───────────────────────────────────────────────
-  const versionPin = await input({
-    message: "Pin to a specific registry version? (default: latest)",
-    default: "latest",
-  });
+  let versionPin = "latest";
+
+  if (registryCachePath && !isOffline) {
+    const branches = await listRegistryBranches(registryUrl);
+    const tags = await listRegistryTags(registryUrl);
+
+    const priority = ["main", "master"];
+    const prioritized = priority.filter((b) => branches.includes(b));
+    const rest = branches.filter((b) => !priority.includes(b)).sort();
+
+    const choices = [
+      { name: "latest (track default branch)", value: "latest" },
+      ...prioritized.map((b) => ({ name: `branch: ${b}`, value: b })),
+      ...rest.map((b) => ({ name: `branch: ${b}`, value: b })),
+      ...tags.map((t) => ({ name: `tag: ${t}`, value: t })),
+    ];
+
+    versionPin = await select({
+      message: "Which registry version do you want to track?",
+      choices,
+    });
+  } else {
+    versionPin = await input({
+      message: "Pin to a specific registry version? (default: latest)",
+      default: "latest",
+    });
+  }
 
   // ── Step 6: Summary + confirm ─────────────────────────────────────────────
   log.blank();

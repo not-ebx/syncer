@@ -11,12 +11,15 @@ export function buildLockFile(
   registryPath: string,
   registryCommit: string,
   resolved: ResolvedContent,
-  packs: string[]
+  packs: string[],
+  lockedRef?: string,
+  lockedRefType?: "tag" | "branch" | "commit"
 ): LockFile {
   return {
     syncer_version: SYNCER_VERSION,
     registry_commit: registryCommit,
     resolved_at: new Date().toISOString(),
+    ...(lockedRef ? { locked_ref: lockedRef, locked_ref_type: lockedRefType } : {}),
     packs,
     skills: resolved.skills.map((name) => ({
       name,

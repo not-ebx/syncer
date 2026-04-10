@@ -5,6 +5,7 @@ import { ensureRegistry } from "./registry.js";
 import { resolvePacks, applyOverrides } from "./resolver.js";
 import { linkItem, removeStaleLinks } from "./symlinks.js";
 import { buildLockFile, writeLockFile, writeLastSync } from "./lock.js";
+import { resolveRefType } from "./registry.js";
 import { recordSync } from "./state.js";
 import { ensureDir, copyDir } from "../utils/fs.js";
 import { resolveTargets } from "../targets.js";
@@ -163,7 +164,12 @@ export async function sync(
   spin.succeed("Symlinks created.");
 
   // ── 5. Write lock file + last-sync ────────────────────────────────────────
-  const lockFile = buildLockFile(cachePath, commit, finalContent, resolved.packs);
+  const isLatestVersion = resolved.version === "latest";
+  const lockedRef = isLatestVersion ? undefined : resolved.version;
+  const lockedRefType = lockedRef
+    ? await resolveRefType(resolved.registry, lockedRef) ?? undefined
+    : undefined;
+  const lockFile = buildLockFile(cachePath, commit, finalContent, resolved.packs, lockedRef, lockedRefType);
   writeLockFile(cwd, lockFile);
   writeLastSync(projectCacheDir, commit);
 

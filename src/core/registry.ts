@@ -134,6 +134,35 @@ export async function listRegistryTags(
   return tags.all;
 }
 
+/** List all remote branches in the registry cache */
+export async function listRegistryBranches(
+  registryUrl: string
+): Promise<string[]> {
+  const cachePath = registryCachePath(registryUrl);
+  if (!fs.existsSync(cachePath)) return [];
+  const git = simpleGit(cachePath);
+  const branches = await git.branch(["-r"]);
+  return branches.all
+    .map((b) => b.trim().replace(/^origin\//, ""))
+    .filter((b) => b !== "HEAD");
+}
+
+/**
+ * Determine what type of ref a version string is.
+ * Returns null if the ref is not found in the cached registry.
+ */
+export async function resolveRefType(
+  registryUrl: string,
+  ref: string
+): Promise<"tag" | "branch" | "commit" | null> {
+  if (/^[0-9a-f]{7,40}$/.test(ref)) return "commit";
+  const tags = await listRegistryTags(registryUrl);
+  if (tags.includes(ref)) return "tag";
+  const branches = await listRegistryBranches(registryUrl);
+  if (branches.includes(ref)) return "branch";
+  return null;
+}
+
 /** Read a file from the registry cache */
 export function registryFile(cachePath: string, ...segments: string[]): string {
   return path.join(cachePath, ...segments);

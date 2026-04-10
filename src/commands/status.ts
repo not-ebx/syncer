@@ -40,6 +40,15 @@ export async function runStatus(options: StatusCommandOptions = {}): Promise<voi
   log.info(chalk.bold("Project status"));
   log.dim(`  Registry: ${resolved.registry}`);
   log.dim(`  Version:  ${resolved.version}`);
+  if (lock?.locked_ref) {
+    const typeLabel =
+      lock.locked_ref_type === "branch"
+        ? chalk.yellow(`tracking branch: ${lock.locked_ref}`)
+        : lock.locked_ref_type === "tag"
+        ? chalk.green(`locked to tag: ${lock.locked_ref}`)
+        : chalk.dim(`pinned to commit: ${lock.locked_ref.slice(0, 8)}`);
+    log.info(`  Lock:     ${typeLabel}`);
+  }
   log.dim(`  Targets:  ${resolved.targets.join(", ")}`);
 
   if (!lock) {

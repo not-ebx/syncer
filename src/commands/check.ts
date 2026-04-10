@@ -40,6 +40,21 @@ async function fetchRemoteCommit(cachePath: string, version: string): Promise<st
   }
 }
 
+/**
+ * Fetch the remote and return the latest commit on a specific branch.
+ * Returns null if offline or fetch fails.
+ */
+async function fetchBranchCommit(cachePath: string, branch: string): Promise<string | null> {
+  try {
+    const git = simpleGit(cachePath);
+    await git.fetch(["--prune"]);
+    const commit = await git.revparse([`origin/${branch}`]);
+    return commit.trim();
+  } catch {
+    return null;
+  }
+}
+
 export interface CheckCommandOptions {
   cwd?: string;
   quiet?: boolean;
@@ -105,18 +120,57 @@ export async function runCheck(options: CheckCommandOptions = {}): Promise<void>
       process.exit(1);
     }
   } else {
-    // Pinned version — compare local cache HEAD with lock (no network needed)
-    let cacheCommit: string;
-    try {
-      const git = simpleGit(cachePath);
-      cacheCommit = (await git.revparse(["HEAD"])).trim();
-    } catch {
-      if (!quiet) log.warn("Out of sync: could not read registry cache commit.");
-      process.exit(1);
-    }
-    if (cacheCommit! !== lock.registry_commit) {
-      if (!quiet) log.warn(`Out of sync: local cache is at ${cacheCommit!.slice(0, 8)}, lock is at ${lock.registry_commit.slice(0, 8)}. Run \`syncer sync\`.`);
-      process.exit(1);
+    const refType = lock.locked_ref_type;
+
+    if (refType === "tag") {
+      // Tags are immutable — local cache match is sufficient, no network needed
+      let cacheCommit: string;
+      try {
+        const git = simpleGit(cachePath);
+        cacheCommit = (await git.revparse(["HEAD"])).trim();
+      } catch {
+        if (!quiet) log.warn("Out of sync: could not read registry cache commit.");
+        process.exit(1);
+      }
+      if (cacheCommit! !== lock.registry_commit) {
+        if (!quiet) log.warn(`Out of sync: local cache is at ${cacheCommit!.slice(0, 8)}, lock is at ${lock.registry_commit.slice(0, 8)}. Run \`syncer sync\`.`);
+        process.exit(1);
+      }
+    } else if (refType === "branch" && lock.locked_ref) {
+      // Branch — fetch and check if remote branch has moved
+      const remoteCommit = await fetchBranchCommit(cachePath, lock.locked_ref);
+      if (remoteCommit === null) {
+        // Offline — fall back to local cache comparison
+        let cacheCommit: string;
+        try {
+          const git = simpleGit(cachePath);
+          cacheCommit = (await git.revparse(["HEAD"])).trim();
+        } catch {
+          if (!quiet) log.warn("Out of sync: could not read registry cache commit.");
+          process.exit(1);
+        }
+        if (cacheCommit! !== lock.registry_commit) {
+          if (!quiet) log.warn(`Out of sync (offline): local cache is at ${cacheCommit!.slice(0, 8)}, lock is at ${lock.registry_commit.slice(0, 8)}. Run \`syncer sync\`.`);
+          process.exit(1);
+        }
+      } else if (remoteCommit !== lock.registry_commit) {
+        if (!quiet) log.warn(`Out of sync: branch "${lock.locked_ref}" is at ${remoteCommit.slice(0, 8)}, lock is at ${lock.registry_commit.slice(0, 8)}. Run \`syncer sync\`.`);
+        process.exit(1);
+      }
+    } else {
+      // Commit hash or old lock file without ref type — compare local cache HEAD with lock
+      let cacheCommit: string;
+      try {
+        const git = simpleGit(cachePath);
+        cacheCommit = (await git.revparse(["HEAD"])).trim();
+      } catch {
+        if (!quiet) log.warn("Out of sync: could not read registry cache commit.");
+        process.exit(1);
+      }
+      if (cacheCommit! !== lock.registry_commit) {
+        if (!quiet) log.warn(`Out of sync: local cache is at ${cacheCommit!.slice(0, 8)}, lock is at ${lock.registry_commit.slice(0, 8)}. Run \`syncer sync\`.`);
+        process.exit(1);
+      }
     }
   }
 

@@ -7,6 +7,7 @@ import { runExclude } from "../commands/exclude.js";
 import { runList } from "../commands/list.js";
 import { runDoctor } from "../commands/doctor.js";
 import { runCheck } from "../commands/check.js";
+import { runLock, runUnlock } from "../commands/lock.js";
 import { runConfigGet, runConfigSet } from "../commands/config.js";
 import {
   runRegistryPackCreate,
@@ -135,6 +136,22 @@ program
     const valid = ["skills", "agents", "commands", "packs", "all"] as const;
     const target = valid.includes(what) ? what : "all";
     await runList(target);
+  });
+
+// ─── syncer lock / unlock ─────────────────────────────────────────────────────
+
+program
+  .command("lock [ref]")
+  .description("Lock the registry to a specific branch, tag, or commit")
+  .action(async (ref) => {
+    await runLock({ ref });
+  });
+
+program
+  .command("unlock")
+  .description("Unlock the registry (track latest)")
+  .action(async () => {
+    await runUnlock();
   });
 
 // ─── syncer check ────────────────────────────────────────────────────────────

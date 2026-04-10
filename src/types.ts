@@ -58,6 +58,8 @@ export interface LockFile {
   syncer_version: string;
   registry_commit: string;
   resolved_at: string;
+  locked_ref?: string;
+  locked_ref_type?: "tag" | "branch" | "commit";
   packs: string[];
   skills: ContentEntry[];
   agents: ContentEntry[];
