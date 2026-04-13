@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(pnpm:*)",
+      "Bash(node:*)",
+      "Bash(npx:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(cat:*)",
+      "Bash(touch:*)",
+      "Bash(chmod:*)",
+      "Bash(echo:*)",
+      "Bash(which:*)",
+      "Bash(env:*)",
+      "Bash(export:*)",
+      "Bash(source:*)",
+      "Bash(tsc:*)",
+      "Bash(eslint:*)",
+      "Bash(prettier:*)",
+      "Bash(jest:*)",
+      "Bash(vitest:*)",
+      "Bash(tsx:*)",
+      "Bash(ts-node:*)",
+      "Bash(jq:*)",
+      "Bash(curl:*)",
+      "Bash(kill:*)",
+      "Bash(lsof:*)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep"
+    ]
+  }
+}
