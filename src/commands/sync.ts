@@ -1,5 +1,5 @@
 import path from "node:path";
-import { readProjectConfig, detectContext } from "../core/config.js";
+import { readProjectConfig, writeProjectConfig, detectContext } from "../core/config.js";
 import { sync } from "../core/syncer.js";
 import { getAllProjects } from "../core/state.js";
 import { log } from "../utils/output.js";
@@ -9,6 +9,7 @@ import { registryCachePath } from "../core/registry.js";
 export interface SyncCommandOptions {
   all?: boolean;
   noFetch?: boolean;
+  prune?: boolean;
   cwd?: string;
 }
 
@@ -52,6 +53,45 @@ export async function runSync(options: SyncCommandOptions = {}): Promise<void> {
       ].join(", ")
     );
   }
+
+  const hasMissing =
+    result.missing.skills.length > 0 ||
+    result.missing.agents.length > 0 ||
+    result.missing.commands.length > 0;
+
+  if (hasMissing) {
+    if (options.prune) {
+      const fresh = readProjectConfig(cwd);
+      if (fresh.skills?.include) {
+        fresh.skills.include = fresh.skills.include.filter(
+          (s) => !result.missing.skills.includes(s)
+        );
+      }
+      if (fresh.agents?.include) {
+        fresh.agents.include = fresh.agents.include.filter(
+          (a) => !result.missing.agents.includes(a)
+        );
+      }
+      if (fresh.commands?.include) {
+        fresh.commands.include = fresh.commands.include.filter(
+          (c) => !result.missing.commands.includes(c)
+        );
+      }
+      writeProjectConfig(cwd, fresh);
+      log.success("Pruned missing items from .syncer.yaml.");
+    } else {
+      const missingNames = [
+        ...result.missing.skills,
+        ...result.missing.agents,
+        ...result.missing.commands,
+      ];
+      log.warn(
+        `${missingNames.length} item(s) not found in registry: ${missingNames.join(", ")}. ` +
+        `Run \`syncer sync --prune\` to remove explicit includes that no longer exist.`
+      );
+    }
+  }
+
   log.success(`Registry commit: ${result.registryCommit.slice(0, 8)}`);
 }
 

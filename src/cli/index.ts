@@ -45,8 +45,9 @@ program
   .description("Fetch registry and sync skills, agents, and commands")
   .option("--all", "Sync all known projects on this machine")
   .option("--no-fetch", "Re-resolve and re-link without fetching registry")
+  .option("--prune", "Remove explicit includes that no longer exist in the registry")
   .action(async (opts) => {
-    await runSync({ all: opts.all, noFetch: !opts.fetch });
+    await runSync({ all: opts.all, noFetch: !opts.fetch, prune: opts.prune });
   });
 
 // ─── syncer status ────────────────────────────────────────────────────────────
