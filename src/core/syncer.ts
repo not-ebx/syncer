@@ -8,6 +8,7 @@ import { buildLockFile, writeLockFile, writeLastSync } from "./lock.js";
 import { resolveRefType } from "./registry.js";
 import { recordSync } from "./state.js";
 import { ensureDir, copyDir } from "../utils/fs.js";
+import { updateSyncerDirGitignore, updateTargetGitignore, computeManagedEntries } from "./gitignore.js";
 import { resolveTargets } from "../targets.js";
 import type { ProjectConfig, ResolvedContent, SyncResult } from "../types.js";
 import { log, spinner } from "../utils/output.js";
@@ -176,6 +177,15 @@ export async function sync(
     removeStaleLinks(target, finalContent, projectCacheDir);
   }
   spin.succeed("Symlinks created.");
+
+  // ── 4b. Update .gitignore files ───────────────────────────────────────────
+  // Use overridden (pre-existence-filter) so entries for items missing from
+  // registry are preserved until the user runs --prune.
+  updateSyncerDirGitignore(cwd);
+  const managedEntries = computeManagedEntries(overridden);
+  for (const target of targets) {
+    updateTargetGitignore(target.base, cwd, managedEntries);
+  }
 
   // ── 5. Write lock file + last-sync ────────────────────────────────────────
   const isLatestVersion = resolved.version === "latest";

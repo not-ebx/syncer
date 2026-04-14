@@ -34,18 +34,20 @@ When working with AI coding agents (Claude Code, Codex, Gemini CLI, etc.) across
 
 ## How It Works
 
-Syncer uses a standard Git repository as a **registry** — the single source of truth for all skills, agents, and commands in your org. Each project declares what it needs in a small `.syncer.yaml` config file. Running `syncer sync` fetches from the registry and symlinks everything into the AI agent tool directories.
+Syncer uses a standard Git repository as a **registry** — the single source of truth for all skills, agents, and commands in your org. Each project declares what it needs in a `.syncer/syncer.yaml` config file. Running `syncer sync` fetches from the registry and symlinks everything into the AI agent tool directories. Gitignore files are auto-managed so only the config and lock file are committed — generated cache and symlinks stay local.
 
 ```
 Registry (Git repo)          Developer Machine
 ────────────────────         ──────────────────────────────────
 skills/                      my-project/
-├── code-review/        →    ├── .syncer.yaml       (committed)
-├── testing/            →    ├── .syncer.lock       (committed)
-agents/                      ├── .syncer/           (gitignored)
-├── explorer.md         →    │   ├── skills/
-commands/                    │   └── agents/
-└── lint.md             →    └── .claude/
+├── code-review/        →    ├── .syncer/               (committed)
+├── testing/            →    │   ├── syncer.yaml        (config — committed)
+agents/                      │   ├── syncer.lock        (lock — committed)
+├── explorer.md         →    │   ├── .gitignore         (auto-managed)
+commands/                    │   ├── skills/            (cache — gitignored)
+└── lint.md             →    │   └── agents/            (cache — gitignored)
+                             └── .claude/
+                                 ├── .gitignore         (auto-managed)
                                  ├── skills/code-review → ../../.syncer/skills/code-review
                                  └── agents/explorer.md → ../../.syncer/agents/explorer.md
 ```
@@ -73,7 +75,7 @@ syncer init
 # → Asks for registry URL
 # → Detects AI agent tools (.claude/, .codex/, etc.)
 # → Lists available packs from the registry
-# → Creates .syncer.yaml and runs first sync
+# → Creates .syncer/syncer.yaml and runs first sync
 
 # On subsequent machines / new team members
 git clone git@github.com:myorg/some-project.git
@@ -128,7 +130,7 @@ syncer pack show <name>         # Show resolved pack contents (own + inherited v
 
 ## Configuration
 
-### Project config (`.syncer.yaml` — commit this)
+### Project config (`.syncer/syncer.yaml` — commit this)
 
 ```yaml
 registry: git@github.com:myorg/skills-registry.git
@@ -177,7 +179,7 @@ default_pack: default
 ```bash
 cd skills-registry
 syncer init --registry
-# Creates .syncer-registry.yaml and the skills/, agents/, commands/, packs/ directories
+# Creates .syncer-registry.yaml and the skills/, agents/, commands/ directories
 ```
 
 Then manage content via normal Git workflow — branches, PRs, reviews. Publish new versions by tagging a release.
@@ -186,31 +188,39 @@ Registry structure:
 
 ```
 skills-registry/
-├── .syncer-registry.yaml
+├── .syncer-registry.yaml   ← registry config + all pack definitions
 ├── skills/
 │   └── code-review/
 │       └── SKILL.md
 ├── agents/
 │   └── explorer.md
-├── commands/
-│   └── lint.md
-└── packs/
-    └── default.yaml
+└── commands/
+    └── lint.md
 ```
 
 ## Packs
 
-Packs are named collections of skills, agents, and commands defined in the registry. They support inheritance via `extends`:
+Packs are named collections of skills, agents, and commands defined directly in `.syncer-registry.yaml`. They support inheritance via `extends`:
 
 ```yaml
-# packs/frontend.yaml
-name: frontend
-extends: default
-skills:
-  - component-guidelines
-  - accessibility-check
-agents:
-  - design-reviewer
+# .syncer-registry.yaml
+name: my-registry
+packs:
+  default:
+    description: Core tools for every project
+    skills:
+      - code-review
+      - testing
+    agents:
+      - explorer
+  frontend:
+    description: Frontend-specific additions
+    extends: default
+    skills:
+      - component-guidelines
+      - accessibility-check
+    agents:
+      - design-reviewer
 ```
 
 Projects include packs by name — when the pack is updated in the registry, everyone gets the update on their next `syncer sync`.

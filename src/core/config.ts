@@ -11,8 +11,9 @@ export const GLOBAL_CONFIG_PATH = path.join(GLOBAL_DIR, "config.yaml");
 export const GLOBAL_STATE_PATH = path.join(GLOBAL_DIR, "state.json");
 export const CACHE_DIR = path.join(GLOBAL_DIR, "cache");
 
-export const PROJECT_CONFIG_FILE = ".syncer.yaml";
-export const PROJECT_LOCK_FILE = ".syncer.lock";
+export const PROJECT_CONFIG_FILE = ".syncer.yaml"; // legacy root-level config
+export const PROJECT_CONFIG_FILE_NEW = ".syncer/syncer.yaml"; // new default location
+export const PROJECT_LOCK_FILE = ".syncer/syncer.lock";
 export const PROJECT_CACHE_DIR = ".syncer";
 export const REGISTRY_MARKER_FILE = ".syncer-registry.yaml";
 
@@ -20,19 +21,28 @@ export const REGISTRY_MARKER_FILE = ".syncer-registry.yaml";
 
 export type Context = "project" | "registry" | "unconfigured";
 
+/** Returns the absolute path to the project config, checking new location first. */
+export function findProjectConfigPath(cwd: string): string | null {
+  for (const rel of [PROJECT_CONFIG_FILE_NEW, PROJECT_CONFIG_FILE_NEW_YML, PROJECT_CONFIG_FILE]) {
+    const p = path.join(cwd, rel);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
 export function detectContext(cwd: string): Context {
   if (fs.existsSync(path.join(cwd, REGISTRY_MARKER_FILE))) return "registry";
-  if (fs.existsSync(path.join(cwd, PROJECT_CONFIG_FILE))) return "project";
+  if (findProjectConfigPath(cwd)) return "project";
   return "unconfigured";
 }
 
 // ─── Project config ──────────────────────────────────────────────────────────
 
 export function readProjectConfig(cwd: string): ProjectConfig {
-  const configPath = path.join(cwd, PROJECT_CONFIG_FILE);
-  if (!fs.existsSync(configPath)) {
+  const configPath = findProjectConfigPath(cwd);
+  if (!configPath) {
     throw new Error(
-      `No .syncer.yaml found. Run \`syncer init\` to set up this project.`
+      `No syncer config found. Run \`syncer init\` to set up this project.`
     );
   }
   const raw = fs.readFileSync(configPath, "utf8");
@@ -40,7 +50,9 @@ export function readProjectConfig(cwd: string): ProjectConfig {
 }
 
 export function writeProjectConfig(cwd: string, config: ProjectConfig): void {
-  const configPath = path.join(cwd, PROJECT_CONFIG_FILE);
+  // Write back to wherever the config currently lives; default to new location.
+  const configPath = findProjectConfigPath(cwd) ?? path.join(cwd, PROJECT_CONFIG_FILE_NEW);
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, stringify(config), "utf8");
 }
 
