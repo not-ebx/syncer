@@ -58,7 +58,7 @@ describe("readProjectConfig / writeProjectConfig", () => {
   });
 
   it("throws if no config file", () => {
-    expect(() => readProjectConfig(tmpDir)).toThrow("No .syncer.yaml found");
+    expect(() => readProjectConfig(tmpDir)).toThrow("No syncer config found");
   });
 });
 

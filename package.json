@@ -1,6 +1,6 @@
 {
   "name": "@syncer/cli",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Keep AI agent skills, subagents, and commands consistent across all repositories",
   "type": "module",
   "bin": {
