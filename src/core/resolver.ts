@@ -3,26 +3,29 @@ import path from "node:path";
 import { parse } from "yaml";
 import type { PackDef, ResolvedContent } from "../types.js";
 import type { ResolvedConfig } from "./config.js";
+import { readRegistryMarker, REGISTRY_MARKER_FILE } from "./config.js";
 
 // ─── Pack loading ─────────────────────────────────────────────────────────────
 
 export function loadPack(registryPath: string, packName: string): PackDef {
-  const packFile = path.join(registryPath, "packs", `${packName}.yaml`);
-  if (!fs.existsSync(packFile)) {
-    throw new Error(`Pack "${packName}" not found in registry (${packFile})`);
+  const markerPath = path.join(registryPath, REGISTRY_MARKER_FILE);
+  if (!fs.existsSync(markerPath)) {
+    throw new Error(`Pack "${packName}" not found in registry (no registry marker found)`);
   }
-  const raw = fs.readFileSync(packFile, "utf8");
-  return parse(raw) as PackDef;
+  const marker = readRegistryMarker(registryPath);
+  const entry = marker.packs?.[packName];
+  if (!entry) {
+    throw new Error(`Pack "${packName}" not found in registry`);
+  }
+  return { name: packName, ...entry };
 }
 
 /** List all available pack names in the registry */
 export function listAvailablePacks(registryPath: string): string[] {
-  const packsDir = path.join(registryPath, "packs");
-  if (!fs.existsSync(packsDir)) return [];
-  return fs
-    .readdirSync(packsDir)
-    .filter((f) => f.endsWith(".yaml"))
-    .map((f) => f.replace(/\.yaml$/, ""));
+  const markerPath = path.join(registryPath, REGISTRY_MARKER_FILE);
+  if (!fs.existsSync(markerPath)) return [];
+  const marker = readRegistryMarker(registryPath);
+  return Object.keys(marker.packs ?? {});
 }
 
 /** List all available skills in the registry */

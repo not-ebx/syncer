@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { stringify } from "yaml";
+import { parse, stringify } from "yaml";
 import {
   loadPack,
   resolvePacks,
@@ -13,13 +13,13 @@ import {
   listAvailablePacks,
 } from "../src/core/resolver.js";
 import type { ResolvedConfig } from "../src/core/config.js";
+import { REGISTRY_MARKER_FILE } from "../src/core/config.js";
 
 let tmpDir: string;
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "syncer-test-"));
   // Create registry structure
-  fs.mkdirSync(path.join(tmpDir, "packs"));
   fs.mkdirSync(path.join(tmpDir, "skills", "code-review"), { recursive: true });
   fs.mkdirSync(path.join(tmpDir, "skills", "testing"), { recursive: true });
   fs.mkdirSync(path.join(tmpDir, "skills", "deploy"), { recursive: true });
@@ -33,6 +33,9 @@ beforeEach(() => {
   fs.writeFileSync(path.join(tmpDir, "agents", "reviewer.md"), "# Reviewer");
   fs.writeFileSync(path.join(tmpDir, "commands", "lint.md"), "# Lint");
   fs.writeFileSync(path.join(tmpDir, "commands", "deploy.md"), "# Deploy cmd");
+
+  // Create registry marker
+  fs.writeFileSync(path.join(tmpDir, REGISTRY_MARKER_FILE), stringify({ name: "test-registry" }));
 });
 
 afterEach(() => {
@@ -40,10 +43,12 @@ afterEach(() => {
 });
 
 function writePack(name: string, content: object) {
-  fs.writeFileSync(
-    path.join(tmpDir, "packs", `${name}.yaml`),
-    stringify(content)
-  );
+  const markerPath = path.join(tmpDir, REGISTRY_MARKER_FILE);
+  const marker = parse(fs.readFileSync(markerPath, "utf8")) ?? {};
+  marker.packs ??= {};
+  const { name: _name, ...entry } = content as { name?: string; [k: string]: unknown };
+  marker.packs[name] = entry;
+  fs.writeFileSync(markerPath, stringify(marker));
 }
 
 // ─── loadPack ────────────────────────────────────────────────────────────────

@@ -12,7 +12,7 @@ import {
   writeGlobalConfig,
   writeRegistryMarker,
   readGlobalConfig,
-  PROJECT_CONFIG_FILE,
+  findProjectConfigPath,
   REGISTRY_MARKER_FILE,
 } from "../core/config.js";
 import { ensureRegistry, listRegistryBranches, listRegistryTags } from "../core/registry.js";
@@ -24,7 +24,7 @@ import {
   loadPack,
 } from "../core/resolver.js";
 import { detectTargets, ALL_KNOWN_TARGET_NAMES } from "../targets.js";
-import { ensureGitignore } from "../utils/fs.js";
+import { updateSyncerDirGitignore } from "../core/gitignore.js";
 import { runSync } from "./sync.js";
 import { log } from "../utils/output.js";
 import type { ProjectConfig } from "../types.js";
@@ -113,10 +113,10 @@ async function initRegistry(cwd: string): Promise<void> {
 
 async function initProject(cwd: string): Promise<void> {
   // Guard: already configured
-  if (fs.existsSync(path.join(cwd, PROJECT_CONFIG_FILE))) {
+  if (findProjectConfigPath(cwd)) {
     log.warn(
-      "This project is already configured (.syncer.yaml found).\n" +
-      "To reconfigure, remove .syncer.yaml and run `syncer init` again."
+      "This project is already configured (syncer config found).\n" +
+      "To reconfigure, remove the config and run `syncer init` again."
     );
     return;
   }
@@ -331,12 +331,11 @@ async function initProject(cwd: string): Promise<void> {
   }
 
   writeProjectConfig(cwd, projectConfig);
-  log.success(".syncer.yaml created");
+  log.success(".syncer/syncer.yaml created");
 
-  // Add .syncer/ to .gitignore
-  ensureGitignore(cwd, "# Syncer cache (managed by syncer)");
-  ensureGitignore(cwd, ".syncer/");
-  log.success(".syncer/ added to .gitignore");
+  // Set up .syncer/.gitignore so cache/generated content is not committed
+  updateSyncerDirGitignore(cwd);
+  log.success(".syncer/.gitignore created");
 
   // First sync
   if (!isOffline) {
