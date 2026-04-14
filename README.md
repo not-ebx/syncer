@@ -177,7 +177,7 @@ default_pack: default
 ```bash
 cd skills-registry
 syncer init --registry
-# Creates .syncer-registry.yaml and the skills/, agents/, commands/, packs/ directories
+# Creates .syncer-registry.yaml and the skills/, agents/, commands/ directories
 ```
 
 Then manage content via normal Git workflow — branches, PRs, reviews. Publish new versions by tagging a release.
@@ -186,31 +186,39 @@ Registry structure:
 
 ```
 skills-registry/
-├── .syncer-registry.yaml
+├── .syncer-registry.yaml   ← registry config + all pack definitions
 ├── skills/
 │   └── code-review/
 │       └── SKILL.md
 ├── agents/
 │   └── explorer.md
-├── commands/
-│   └── lint.md
-└── packs/
-    └── default.yaml
+└── commands/
+    └── lint.md
 ```
 
 ## Packs
 
-Packs are named collections of skills, agents, and commands defined in the registry. They support inheritance via `extends`:
+Packs are named collections of skills, agents, and commands defined directly in `.syncer-registry.yaml`. They support inheritance via `extends`:
 
 ```yaml
-# packs/frontend.yaml
-name: frontend
-extends: default
-skills:
-  - component-guidelines
-  - accessibility-check
-agents:
-  - design-reviewer
+# .syncer-registry.yaml
+name: my-registry
+packs:
+  default:
+    description: Core tools for every project
+    skills:
+      - code-review
+      - testing
+    agents:
+      - explorer
+  frontend:
+    description: Frontend-specific additions
+    extends: default
+    skills:
+      - component-guidelines
+      - accessibility-check
+    agents:
+      - design-reviewer
 ```
 
 Projects include packs by name — when the pack is updated in the registry, everyone gets the update on their next `syncer sync`.
