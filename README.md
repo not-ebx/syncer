@@ -34,18 +34,20 @@ When working with AI coding agents (Claude Code, Codex, Gemini CLI, etc.) across
 
 ## How It Works
 
-Syncer uses a standard Git repository as a **registry** — the single source of truth for all skills, agents, and commands in your org. Each project declares what it needs in a small `.syncer.yaml` config file. Running `syncer sync` fetches from the registry and symlinks everything into the AI agent tool directories.
+Syncer uses a standard Git repository as a **registry** — the single source of truth for all skills, agents, and commands in your org. Each project declares what it needs in a `.syncer/syncer.yaml` config file. Running `syncer sync` fetches from the registry and symlinks everything into the AI agent tool directories. Gitignore files are auto-managed so only the config and lock file are committed — generated cache and symlinks stay local.
 
 ```
 Registry (Git repo)          Developer Machine
 ────────────────────         ──────────────────────────────────
 skills/                      my-project/
-├── code-review/        →    ├── .syncer.yaml       (committed)
-├── testing/            →    ├── .syncer.lock       (committed)
-agents/                      ├── .syncer/           (gitignored)
-├── explorer.md         →    │   ├── skills/
-commands/                    │   └── agents/
-└── lint.md             →    └── .claude/
+├── code-review/        →    ├── .syncer/               (committed)
+├── testing/            →    │   ├── syncer.yaml        (config — committed)
+agents/                      │   ├── syncer.lock        (lock — committed)
+├── explorer.md         →    │   ├── .gitignore         (auto-managed)
+commands/                    │   ├── skills/            (cache — gitignored)
+└── lint.md             →    │   └── agents/            (cache — gitignored)
+                             └── .claude/
+                                 ├── .gitignore         (auto-managed)
                                  ├── skills/code-review → ../../.syncer/skills/code-review
                                  └── agents/explorer.md → ../../.syncer/agents/explorer.md
 ```
@@ -73,7 +75,7 @@ syncer init
 # → Asks for registry URL
 # → Detects AI agent tools (.claude/, .codex/, etc.)
 # → Lists available packs from the registry
-# → Creates .syncer.yaml and runs first sync
+# → Creates .syncer/syncer.yaml and runs first sync
 
 # On subsequent machines / new team members
 git clone git@github.com:myorg/some-project.git
@@ -128,7 +130,7 @@ syncer pack show <name>         # Show resolved pack contents (own + inherited v
 
 ## Configuration
 
-### Project config (`.syncer.yaml` — commit this)
+### Project config (`.syncer/syncer.yaml` — commit this)
 
 ```yaml
 registry: git@github.com:myorg/skills-registry.git
