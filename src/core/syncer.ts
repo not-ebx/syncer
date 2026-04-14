@@ -81,10 +81,19 @@ export async function sync(
     spin.fail(`Pack resolution failed: ${err}`);
     throw err;
   }
-  const finalContent = applyOverrides(packResolved, resolved);
+  const overridden = applyOverrides(packResolved, resolved);
+  const finalContent = filterToExisting(cachePath, overridden);
   spin.succeed(
     `Resolved: ${finalContent.skills.length} skills, ${finalContent.agents.length} agents, ${finalContent.commands.length} commands`
   );
+
+  // Warn about items referenced in pack YAML but missing from registry
+  const missingSkills = overridden.skills.filter((s) => !finalContent.skills.includes(s));
+  const missingAgents = overridden.agents.filter((a) => !finalContent.agents.includes(a));
+  const missingCmds = overridden.commands.filter((c) => !finalContent.commands.includes(c));
+  for (const s of missingSkills) log.warn(`Skill "${s}" is referenced in pack but not found in registry — skipping.`);
+  for (const a of missingAgents) log.warn(`Agent "${a}" is referenced in pack but not found in registry — skipping.`);
+  for (const c of missingCmds) log.warn(`Command "${c}" is referenced in pack but not found in registry — skipping.`);
 
   // ── 3. Copy resolved content to .syncer/ ─────────────────────────────────
   const projectCacheDir = path.join(cwd, PROJECT_CACHE_DIR);
@@ -96,6 +105,11 @@ export async function sync(
   ensureDir(skillsCacheDir);
   ensureDir(agentsCacheDir);
   ensureDir(commandsCacheDir);
+
+  // Remove stale items from .syncer/ project cache (deleted from registry)
+  pruneStaleProjectCache(skillsCacheDir, finalContent.skills, false);
+  pruneStaleProjectCache(agentsCacheDir, finalContent.agents.map((a) => `${a}.md`), true);
+  pruneStaleProjectCache(commandsCacheDir, finalContent.commands.map((c) => `${c}.md`), true);
 
   spin = spinner("Copying content...");
 
@@ -182,6 +196,36 @@ export async function sync(
     unchanged: dedupeSyncResult(unchanged),
     registryCommit: commit,
   };
+}
+
+/** Filter resolved content to only items that actually exist in the registry cache. */
+function filterToExisting(cachePath: string, content: ResolvedContent): ResolvedContent {
+  return {
+    skills: content.skills.filter((name) =>
+      fs.existsSync(path.join(cachePath, "skills", name))
+    ),
+    agents: content.agents.filter((name) =>
+      fs.existsSync(path.join(cachePath, "agents", `${name}.md`))
+    ),
+    commands: content.commands.filter((name) =>
+      fs.existsSync(path.join(cachePath, "commands", `${name}.md`))
+    ),
+  };
+}
+
+/** Remove entries from the project-level .syncer/ cache that are no longer managed. */
+function pruneStaleProjectCache(cacheDir: string, keepNames: string[], isFile: boolean): void {
+  if (!fs.existsSync(cacheDir)) return;
+  for (const entry of fs.readdirSync(cacheDir, { withFileTypes: true })) {
+    if (!keepNames.includes(entry.name)) {
+      const entryPath = path.join(cacheDir, entry.name);
+      if (isFile && entry.isFile()) {
+        fs.rmSync(entryPath);
+      } else if (!isFile && entry.isDirectory()) {
+        fs.rmSync(entryPath, { recursive: true });
+      }
+    }
+  }
 }
 
 function dedupeSyncResult(r: ResolvedContent): ResolvedContent {
