@@ -98,5 +98,6 @@ export interface SyncResult {
   added: ResolvedContent;
   removed: ResolvedContent;
   unchanged: ResolvedContent;
+  missing: ResolvedContent;
   registryCommit: string;
 }

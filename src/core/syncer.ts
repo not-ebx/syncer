@@ -194,6 +194,11 @@ export async function sync(
     added: dedupeSyncResult(added),
     removed: { skills: [], agents: [], commands: [] },
     unchanged: dedupeSyncResult(unchanged),
+    missing: {
+      skills: missingSkills,
+      agents: missingAgents,
+      commands: missingCmds,
+    },
     registryCommit: commit,
   };
 }
