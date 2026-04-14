@@ -1,21 +1,40 @@
-# Syncer
+<div align="center">
 
-> One command, every repo has the right skills.
+```
+   _____                           
+  / ___/__  ______  ________  _____
+  \__ \/ / / / __ \/ ___/ _ \/ ___/
+ ___/ / /_/ / / / / /__/  __/ /    
+/____/\__, /_/ /_/\___/\___/_/     
+     /____/                        
+```
 
-Syncer is a lightweight Node.js CLI that keeps AI agent skills, custom subagents, and commands consistent across all repositories in an organization. It solves version drift, missing skills, and the manual overhead of copy-pasting files across repos.
+**One command. Every repo has the right skills.**
+
+[![npm version](https://img.shields.io/npm/v/@syncer/cli)](https://www.npmjs.com/package/@syncer/cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node.js 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+
+</div>
+
+---
+
+
+
+Syncer is a lightweight CLI that keeps AI agent skills, custom subagents, and slash commands consistent across every repository in your organization. It solves version drift, missing skills, and the manual overhead of copy-pasting files across repos — using a plain Git repo as the single source of truth.
 
 ## The Problem
 
-When using AI coding agents (Claude Code, Codex, Gemini CLI, etc.) across multiple repositories:
+When working with AI coding agents (Claude Code, Codex, Gemini CLI, etc.) across multiple repositories:
 
 - **Version drift** — Repo A has v2 of a skill, Repo B has v1, Repo C has a fork
-- **Missing skills** — New repos are created without any skills
+- **Missing skills** — New repos are created without any skills configured
 - **Inconsistent behavior** — The same prompt produces different results because the underlying skills differ
-- **Manual overhead** — Keeping skills in sync requires copy-pasting files that nobody does consistently
+- **Manual overhead** — Keeping files in sync requires copy-pasting that nobody does consistently
 
 ## How It Works
 
-Syncer uses a standard Git repository as a **registry** — the single source of truth for all skills, agents, and commands in your org. Each project declares what it needs in a small `.syncer.yaml` config file. Running `syncer sync` fetches from the registry and creates symlinks into the AI agent tool directories (`.claude/`, `.codex/`, etc.).
+Syncer uses a standard Git repository as a **registry** — the single source of truth for all skills, agents, and commands in your org. Each project declares what it needs in a small `.syncer.yaml` config file. Running `syncer sync` fetches from the registry and symlinks everything into the AI agent tool directories.
 
 ```
 Registry (Git repo)          Developer Machine
@@ -34,7 +53,13 @@ commands/                    │   └── agents/
 ## Installation
 
 ```bash
-npm install -g syncer
+npm install -g @syncer/cli
+```
+
+Or run without installing:
+
+```bash
+npx @syncer/cli sync
 ```
 
 Requires Node.js 20+.
@@ -42,21 +67,18 @@ Requires Node.js 20+.
 ## Quick Start
 
 ```bash
-# Set up global defaults (optional)
-syncer init --global
-
 # In any project, run the interactive wizard
 cd my-project
 syncer init
 # → Asks for registry URL
 # → Detects AI agent tools (.claude/, .codex/, etc.)
-# → Lists available packs from registry
+# → Lists available packs from the registry
 # → Creates .syncer.yaml and runs first sync
 
 # On subsequent machines / new team members
 git clone git@github.com:myorg/some-project.git
 cd some-project
-syncer sync   # everything is ready in <30 seconds
+syncer sync   # everything is ready in seconds
 ```
 
 ## Commands
@@ -68,6 +90,7 @@ syncer init                     # Interactive setup wizard
 syncer sync                     # Fetch registry + resolve + symlink
 syncer sync --all               # Sync all known projects on this machine
 syncer sync --no-fetch          # Re-resolve and re-link without fetching
+syncer sync --prune             # Remove symlinks for items no longer in config
 syncer status                   # What's installed, is it current?
 syncer status --all             # All known projects' states
 syncer doctor                   # Diagnose broken symlinks, stale cache, etc.
@@ -125,10 +148,10 @@ skills:
   exclude:
     - deploy          # Exclude even if a pack includes it
 
-# version: latest           # Track HEAD (default)
-# version: v2.1.0           # Pin to a tag
+# version: latest             # Track HEAD (default)
+# version: v2.1.0             # Pin to a tag
 # version: feature/my-branch  # Track a branch (testing only — non-deterministic)
-# version: abc123f           # Pin to a commit (maximum reproducibility)
+# version: abc123f            # Pin to a commit (maximum reproducibility)
 ```
 
 ### Global config (`~/.syncer/config.yaml`)
@@ -177,7 +200,7 @@ skills-registry/
 
 ## Packs
 
-Packs are named collections of skills, agents, and commands defined in the registry. They can extend other packs:
+Packs are named collections of skills, agents, and commands defined in the registry. They support inheritance via `extends`:
 
 ```yaml
 # packs/frontend.yaml
@@ -186,7 +209,22 @@ extends: default
 skills:
   - component-guidelines
   - accessibility-check
+agents:
+  - design-reviewer
 ```
+
+Projects include packs by name — when the pack is updated in the registry, everyone gets the update on their next `syncer sync`.
+
+## Why Git as a Registry?
+
+- **No new infrastructure** — your team already knows Git
+- **Full history** — every change is audited, reversible, and reviewable via PRs
+- **Pinning** — projects can pin to a tag or commit for stability, then upgrade deliberately
+- **Private by default** — private repos work out of the box with existing SSH keys
+
+## Contributing
+
+Issues and PRs are welcome. See the repo for development setup.
 
 ## License
 
