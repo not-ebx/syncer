@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import simpleGit from "simple-git";
+import { simpleGit } from "simple-git";
 import { CACHE_DIR } from "./config.js";
 import { ensureDir, urlToKey } from "../utils/fs.js";
 

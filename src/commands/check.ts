@@ -6,7 +6,7 @@ import { registryCachePath } from "../core/registry.js";
 import { resolveTargets } from "../targets.js";
 import { auditSymlinks } from "../core/symlinks.js";
 import { log } from "../utils/output.js";
-import simpleGit from "simple-git";
+import { simpleGit } from "simple-git";
 
 /**
  * Fetch the remote and return the latest commit on the tracked branch.

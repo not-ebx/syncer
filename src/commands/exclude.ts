@@ -60,11 +60,10 @@ export async function runExclude(
   await runSync({ cwd });
 }
 
-function pluralize(t: ContentType): "skills" | "agents" | "commands" | "packs" {
+function pluralize(t: Exclude<ContentType, "pack">): "skills" | "agents" | "commands" {
   if (t === "skill") return "skills";
   if (t === "agent") return "agents";
-  if (t === "command") return "commands";
-  return "packs";
+  return "commands";
 }
 
 function capitalize(s: string): string {
