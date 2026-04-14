@@ -34,6 +34,17 @@
   "bugs": {
     "url": "https://github.com/not-ebx/syncer/issues"
   },
+  "author": "not-ebx",
+  "keywords": [
+    "ai",
+    "agents",
+    "skills",
+    "claude",
+    "codex",
+    "sync",
+    "cli",
+    "registry"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.17.0",
