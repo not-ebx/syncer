@@ -26,6 +26,14 @@
     "simple-git": "^3.27.0",
     "yaml": "^2.7.1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/not-ebx/syncer.git"
+  },
+  "homepage": "https://github.com/not-ebx/syncer#readme",
+  "bugs": {
+    "url": "https://github.com/not-ebx/syncer/issues"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.17.0",
