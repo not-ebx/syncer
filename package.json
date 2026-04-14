@@ -1,12 +1,16 @@
 {
-  "name": "syncer",
+  "name": "@syncer/cli",
   "version": "0.2.0",
   "description": "Keep AI agent skills, subagents, and commands consistent across all repositories",
   "type": "module",
   "bin": {
     "syncer": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "prepare": "pnpm build",
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
