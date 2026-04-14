@@ -1,10 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { stringify } from "yaml";
 import {
   detectContext,
   PROJECT_CONFIG_FILE,
   REGISTRY_MARKER_FILE,
+  readRegistryMarker,
+  writeRegistryMarker,
 } from "../core/config.js";
 import {
   loadPack,
@@ -49,13 +50,11 @@ function requireRegistry(cwd: string): void {
 // ─── Pack helpers ─────────────────────────────────────────────────────────────
 
 function writePack(registryPath: string, pack: PackDef): void {
-  const packsDir = path.join(registryPath, "packs");
-  fs.mkdirSync(packsDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(packsDir, `${pack.name}.yaml`),
-    stringify(pack),
-    "utf8"
-  );
+  const marker = readRegistryMarker(registryPath);
+  marker.packs ??= {};
+  const { name, ...entry } = pack;
+  marker.packs[name] = entry;
+  writeRegistryMarker(registryPath, marker);
 }
 
 type ContentType = "skill" | "agent" | "command";
@@ -100,10 +99,8 @@ export async function runRegistryPackCreate(
   const cwd = options.cwd ?? process.cwd();
   requireRegistry(cwd);
 
-  const packsDir = path.join(cwd, "packs");
-  const packFile = path.join(packsDir, `${name}.yaml`);
-
-  if (fs.existsSync(packFile)) {
+  const marker = readRegistryMarker(cwd);
+  if (marker.packs?.[name]) {
     log.error(`Pack "${name}" already exists.`);
     process.exit(1);
   }
@@ -127,7 +124,7 @@ export async function runRegistryPackCreate(
   };
 
   writePack(cwd, pack);
-  log.success(`Created pack "${name}" at packs/${name}.yaml`);
+  log.success(`Created pack "${name}" in ${REGISTRY_MARKER_FILE}`);
 
   if (options.extends) {
     log.dim(`  Extends: ${options.extends}`);

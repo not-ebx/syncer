@@ -33,6 +33,7 @@ export interface GlobalConfig {
 export interface RegistryMarker {
   name: string;
   description?: string;
+  packs?: Record<string, Omit<PackDef, "name">>;
 }
 
 export interface PackDef {
