@@ -44,7 +44,7 @@ export async function sync(
       spin.fail("No local cache found. Run without --no-fetch first.");
       throw new Error("No registry cache found.");
     }
-    const simpleGit = (await import("simple-git")).default;
+    const { simpleGit } = await import("simple-git");
     const git = simpleGit(cachePath);
     const commit = (await git.revparse(["HEAD"])).trim();
     registryInfo = { cachePath, commit, fromCache: true };
