@@ -13,6 +13,7 @@ export const CACHE_DIR = path.join(GLOBAL_DIR, "cache");
 
 export const PROJECT_CONFIG_FILE = ".syncer.yaml"; // legacy root-level config
 export const PROJECT_CONFIG_FILE_NEW = ".syncer/syncer.yaml"; // new default location
+export const PROJECT_CONFIG_FILE_NEW_YML = ".syncer/syncer.yml"; // alternate extension
 export const PROJECT_LOCK_FILE = ".syncer/syncer.lock";
 export const PROJECT_CACHE_DIR = ".syncer";
 export const REGISTRY_MARKER_FILE = ".syncer-registry.yaml";
