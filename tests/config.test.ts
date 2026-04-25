@@ -7,6 +7,7 @@ import {
   readProjectConfig,
   writeProjectConfig,
   detectContext,
+  findProjectConfigPath,
   resolveConfig,
 } from "../src/core/config.js";
 import type { ProjectConfig, GlobalConfig } from "../src/types.js";
@@ -31,6 +32,12 @@ describe("detectContext", () => {
     expect(detectContext(tmpDir)).toBe("project");
   });
 
+  it("returns project when .syncer/syncer.yml exists", () => {
+    fs.mkdirSync(path.join(tmpDir, ".syncer"));
+    fs.writeFileSync(path.join(tmpDir, ".syncer", "syncer.yml"), "registry: git@github.com:org/reg.git\n");
+    expect(detectContext(tmpDir)).toBe("project");
+  });
+
   it("returns registry when .syncer-registry.yaml exists", () => {
     fs.writeFileSync(path.join(tmpDir, ".syncer-registry.yaml"), "name: my-registry\n");
     expect(detectContext(tmpDir)).toBe("registry");
@@ -44,6 +51,15 @@ describe("detectContext", () => {
 });
 
 describe("readProjectConfig / writeProjectConfig", () => {
+  it("finds configs in preferred order", () => {
+    fs.mkdirSync(path.join(tmpDir, ".syncer"));
+    fs.writeFileSync(path.join(tmpDir, ".syncer.yaml"), "registry: legacy\n");
+    fs.writeFileSync(path.join(tmpDir, ".syncer", "syncer.yml"), "registry: yml\n");
+    fs.writeFileSync(path.join(tmpDir, ".syncer", "syncer.yaml"), "registry: yaml\n");
+
+    expect(findProjectConfigPath(tmpDir)).toBe(path.join(tmpDir, ".syncer", "syncer.yaml"));
+  });
+
   it("round-trips a config", () => {
     const config: ProjectConfig = {
       registry: "git@github.com:org/reg.git",
@@ -55,6 +71,17 @@ describe("readProjectConfig / writeProjectConfig", () => {
     expect(read.registry).toBe(config.registry);
     expect(read.targets).toEqual(["claude", "codex"]);
     expect(read.packs?.include).toEqual(["default"]);
+    expect(fs.existsSync(path.join(tmpDir, ".syncer", "syncer.yaml"))).toBe(true);
+  });
+
+  it("writes back to existing .syncer/syncer.yml config", () => {
+    fs.mkdirSync(path.join(tmpDir, ".syncer"));
+    fs.writeFileSync(path.join(tmpDir, ".syncer", "syncer.yml"), "registry: old\n");
+
+    writeProjectConfig(tmpDir, { registry: "new" });
+
+    expect(readProjectConfig(tmpDir).registry).toBe("new");
+    expect(fs.existsSync(path.join(tmpDir, ".syncer", "syncer.yaml"))).toBe(false);
   });
 
   it("throws if no config file", () => {
